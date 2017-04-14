@@ -1,10 +1,12 @@
 console.log("Sanity Check: JS is working!");
+var template;
 var $booksList;
 var allBooks = [];
 
 $(document).ready(function(){
 
   $booksList = $('#bookTarget');
+
   $.ajax({
     method: 'GET',
     url: '/api/books',
@@ -24,7 +26,6 @@ $(document).ready(function(){
   });
 
   $booksList.on('click', '.deleteBtn', function() {
-    console.log('clicked delete button to', '/api/books/'+$(this).attr('data-id'));
     $.ajax({
       method: 'DELETE',
       url: '/api/books/'+$(this).attr('data-id'),
@@ -33,21 +34,48 @@ $(document).ready(function(){
     });
   });
 
+
+  $booksList.on('submit', '#addCharacterForm', function(e) {
+    e.preventDefault();
+    console.log('new characters');
+    $.ajax({
+      method: 'POST',
+      url: '/api/books/'+$(this).attr('data-id')+'/characters',
+      data: $(this).serializeArray(),
+      success: newCharacterSuccess,
+      error: newCharacterError
+    });
+  });
+
 });
+
+function getCharacterHtml(_book_id, character) {
+  return `${character.name} <button class="deleteCharacter btn btn-danger" data-bookid=${_book_id} data-charid=${character._id}><b>x</b></button>`;
+}
+
+function getAllCharactersHtml(_book_id, characters) {
+  if (characters) {
+    return characters.map(function(character) {
+                return getCharacterHtml(_book_id, character);
+              }).join("");
+  } else {
+    return "";
+  }
+}
 
 function getBookHtml(book) {
   return `<hr>
           <p>
             <b>${book.title}</b>
-            by ${book.author}
+            by ${(book.author) ? book.author.name : 'null'}
             <button type="button" name="button" class="deleteBtn btn btn-danger pull-right" data-id=${book._id}>Delete</button>
           </p>`;
 }
 
 function getAllBooksHtml(books) {
+  console.log('creating paragraph for', book);
   return books.map(getBookHtml).join("");
 }
-
 // helper function to render all posts to view
 // note: we empty and re-render the collection each time our post data changes
 function render () {
@@ -78,14 +106,13 @@ function newBookSuccess(json) {
 }
 
 function newBookError() {
-  console.log('newbook error!');
+  console.log("new book error!");
 }
 
 function deleteBookSuccess(json) {
   var book = json;
-  console.log(json);
   var bookId = book._id;
-  console.log('delete book', bookId);
+
   // find the book with the correct ID and remove it from our allBooks array
   for(var index = 0; index < allBooks.length; index++) {
     if(allBooks[index]._id === bookId) {
@@ -97,5 +124,5 @@ function deleteBookSuccess(json) {
 }
 
 function deleteBookError() {
-  console.log('deletebook error!');
+  console.log("book deleting error!");
 }
